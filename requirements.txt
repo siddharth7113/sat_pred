@@ -1,0 +1,10 @@
+ocf_blosc2
+ocf_datapipes
+numpy
+pandas
+xarray
+dask[distributed]
+zarr
+typer
+gcsfs
+
