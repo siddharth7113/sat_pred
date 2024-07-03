@@ -111,7 +111,7 @@ class SatelliteDataset(Dataset):
         ds_sel = self.ds.sel(
             time=slice(
                 t0-minutes(self.history_mins), 
-                t0+minutes(self.history_mins)
+                t0+minutes(self.forecast_mins)
             )
         )
         
