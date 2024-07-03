@@ -1,5 +1,8 @@
 ocf_blosc2
 ocf_datapipes
+lightning
+torch 
+torchvision 
 numpy
 pandas
 xarray
