@@ -1,6 +1,7 @@
 """Training class to wrap model and optimizer"""
 
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn.functional as F
 from torch.utils.data import default_collate
@@ -76,7 +77,6 @@ def upload_video(
         channel_nums: The channel numbers to log
         fps: The frames per second of the video
     """
-    
     y = y.cpu().numpy()
     y_hat = y_hat.cpu().numpy()
 
@@ -101,6 +101,8 @@ class TrainingModule(pl.LightningModule):
         model: torch.nn.Module,
         target_loss: str = "MAE",
         optimizer = AdamWReduceLROnPlateau(),
+        video_plot_t0_times: list[str] = None,
+        video_crop_plots=None,
     ):
         """Lightning module to wrap model, optimizer, and training routine
 
@@ -120,6 +122,9 @@ class TrainingModule(pl.LightningModule):
         self.target_loss = target_loss
         
         self._accumulated_metrics = MetricAccumulator()
+
+        self.video_plot_t0_times = video_plot_t0_times
+        self.video_crop_plots = video_crop_plots
     
     @staticmethod
     def _minus_one_to_nan(y: torch.Tensor) -> None:
@@ -245,23 +250,57 @@ class TrainingModule(pl.LightningModule):
         # Upload videos of the first three validation samples
         val_dataset = self.trainer.val_dataloaders.dataset
         
-        dates = [val_dataset.t0_times[i] for i in [0,1,2]]
-        
-        X, y = default_collate([val_dataset[date]for date in dates])
-        X = X.to(self.device)
-        y = y.to(self.device)
-        
-        with torch.no_grad():
-            y_hat = self.model(X)
+        if self.video_plot_t0_times is None:
+            dates = [val_dataset.t0_times[i] for i in [0,1,2]]
 
-        assert val_dataset.nan_to_num, val_dataset.nan_to_num
-                               
-        for i in range(len(dates)):
+            
+            X, y = default_collate([val_dataset[date]for date in dates])
+            X = X.to(self.device)
+            y = y.to(self.device)
+            
+            with torch.no_grad():
+                y_hat = self.model(X)
 
-            for channel_num in [1, 8]:
+            assert val_dataset.nan_to_num, val_dataset.nan_to_num
+                                
+            for i in range(len(dates)):
+
+                for channel_num in [1, 8]:
+                    channel_name = val_dataset.ds.variable.values[channel_num]
+                    video_name = f"val_sample_videos/{dates[i]}_{channel_name}"
+                    upload_video(y[i], y_hat[i], video_name, channel_nums=[channel_num])
+
+        if self.video_crop_plots is not None:
+            dates = pd.to_datetime([x["date"] for x in self.video_crop_plots])
+            X, y = default_collate([val_dataset[date]for date in dates])
+            X = X.to(self.device)
+            y = y.to(self.device)
+
+            with torch.no_grad():
+                y_hat = self.model(X)
+
+            for n in range(len(self.video_crop_plots)):
+
+                date = dates[n]
+                channel_num = 8
                 channel_name = val_dataset.ds.variable.values[channel_num]
-                video_name = f"val_sample_videos/{dates[i]}_{channel_name}"
-                upload_video(y[i], y_hat[i], video_name, channel_nums=[channel_num])
+                i = self.video_crop_plots[n]["i"]
+                j = self.video_crop_plots[n]["j"]
+                s = self.video_crop_plots[n]["s"]
+
+                channel_name = val_dataset.ds.variable.values[channel_num]
+                video_name = f"val_close_up_sample_videos/{date}_{channel_name}_{i=}_{j=}_{s=}"
+
+                i_slice = slice(max(0, i-s//2), i+s//2)
+                j_slice = slice(max(0, j-s//2), j+s//2)
+                upload_video(
+                    y[n, ..., i_slice, j_slice], 
+                    y_hat[n, ..., i_slice, j_slice],
+                    video_name, 
+                    channel_nums=[channel_num]
+                )
+
+
                 
     def on_validation_epoch_end(self):
         # Clear cache at the end of validation
