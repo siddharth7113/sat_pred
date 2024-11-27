@@ -3,6 +3,7 @@
 
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 
 class BasicConv2d(nn.Module):
@@ -232,15 +233,36 @@ class Mid_Xnet(nn.Module):
 
 
 class SimVP(nn.Module):
-    def __init__(self, num_channels, history_len, forecast_len, hid_S=16, hid_T=256, N_S=4, N_T=8, incep_ker=[3,5,7,11], groups=8):
+    def __init__(
+        self, 
+        num_channels, 
+        history_len, 
+        forecast_len, 
+        spatial_size=(279, 386), 
+        hid_S=16, 
+        hid_T=256, 
+        N_S=4,
+        N_T=8, 
+        incep_ker=[3,5,7,11], 
+        groups=8
+    ):
         super(SimVP, self).__init__()
                 
         self.enc = Encoder(num_channels, hid_S, N_S)
         self.hid = Mid_Xnet(history_len*hid_S, hid_T, N_T, incep_ker, groups)
         self.dec = Decoder(hid_S, num_channels, N_S)
+        self.spatial_size = spatial_size
 
 
     def forward(self, x_raw):
+        
+        # Pad out to a multiple of downsample factor
+        #pad_top = pad_left = 0
+        #downsample_factor = (N_S // 2)*2
+        #pad_bottom = downsample_factor - (self.spatial_size[0] % downsample_factor)
+        #pad_right = downsample_factor - (self.spatial_size[1] % downsample_factor)
+        #x_raw = F.pad(x_raw, (pad_left, pad_right, pad_top, pad_bottom), mode='constant', value=0)
+
         # (batch, channel, time, height, width) -> (batch, time, channel, height, width)
         x_raw = x_raw.permute(0,2,1,3,4)
         
@@ -258,4 +280,7 @@ class SimVP(nn.Module):
         Y = Y.reshape(B, T, C, H, W)
         
         Y = Y.permute(0,2,1,3,4)
+
+        # Remove padding
+        # Y = Y[..., :self.spatial_size[0]-pad_bottom, :self.spatial_size[1]-pad_right]
         return Y

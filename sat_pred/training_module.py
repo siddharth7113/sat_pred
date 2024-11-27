@@ -250,7 +250,7 @@ class TrainingModule(pl.LightningModule):
         # Upload videos of the first three validation samples
         val_dataset = self.trainer.val_dataloaders.dataset
         
-        if self.video_plot_t0_times is None:
+        if self.video_plot_t0_times is not None:
             dates = [val_dataset.t0_times[i] for i in [0,1,2]]
 
             
