@@ -1,5 +1,6 @@
 """Train the model using parameters in the supplied config files."""
 
+
 if __name__ == "__main__":
     import torch.multiprocessing as mp
     mp.set_start_method("spawn", force=True)
@@ -22,13 +23,13 @@ from omegaconf import DictConfig, OmegaConf
 
 import rich.syntax
 import rich.tree
-#from lightning.pytorch.utilities import rank_zero_only
+from lightning.pytorch.utilities import rank_zero_only
 
 # TODO: is this line needed?
 torch.set_default_dtype(torch.float32)
 
 
-#@rank_zero_only
+@rank_zero_only
 def print_config(
     config: DictConfig,
     fields: list[str] = (
@@ -65,6 +66,7 @@ def print_config(
 
     rich.print(tree)
 
+@rank_zero_only
 
 
 @hydra.main(config_path="../configs/", config_name="config.yaml", version_base="1.2")
@@ -109,6 +111,12 @@ def train(config: DictConfig):
             if isinstance(callback, ModelCheckpoint):
                 # Need to call the .experiment property to initialise the logger
                 wandb_logger.experiment
+
+                #  skip for non-rank-0 processes: 
+                # see https://github.com/Lightning-AI/pytorch-lightning/issues/13166#issuecomment-1139765549
+                if wandb_logger.version is None:
+                    break
+
                 callback.dirpath = "/".join(
                     callback.dirpath.split("/")[:-1] + [wandb_logger.version]
                 )
