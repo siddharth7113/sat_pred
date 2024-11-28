@@ -1,14 +1,14 @@
 _target_: cloudcasting.dataset.SatelliteDataModule
 zarr_path: 
-  - /mnt/disks/sat_data_all/2008_training_nonhrv.zarr
-  - /mnt/disks/sat_data_all/2009_training_nonhrv.zarr
-  - /mnt/disks/sat_data_all/2010_training_nonhrv.zarr
-  - /mnt/disks/sat_data_all/2011_training_nonhrv.zarr
-  - /mnt/disks/sat_data_all/2012_training_nonhrv.zarr
-  - /mnt/disks/sat_data_all/2013_training_nonhrv.zarr
-  - /mnt/disks/sat_data_all/2014_training_nonhrv.zarr
-  - /mnt/disks/sat_data_all/2015_training_nonhrv.zarr
-  - /mnt/disks/sat_data_all/2016_training_nonhrv.zarr
+  - /mnt/disks/sat_data/sat_data_all/2008_training_nonhrv.zarr
+  - /mnt/disks/sat_data/sat_data_all/2009_training_nonhrv.zarr
+  - /mnt/disks/sat_data/sat_data_all/2010_training_nonhrv.zarr
+  - /mnt/disks/sat_data/sat_data_all/2011_training_nonhrv.zarr
+  - /mnt/disks/sat_data/sat_data_all/2012_training_nonhrv.zarr
+  - /mnt/disks/sat_data/sat_data_all/2013_training_nonhrv.zarr
+  - /mnt/disks/sat_data/sat_data_all/2014_training_nonhrv.zarr
+  - /mnt/disks/sat_data/sat_data_all/2015_training_nonhrv.zarr
+  - /mnt/disks/sat_data/sat_data_all/2016_training_nonhrv.zarr
 history_mins: 165
 forecast_mins: 180
 sample_freq_mins: 15
