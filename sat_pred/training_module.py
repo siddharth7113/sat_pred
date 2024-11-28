@@ -215,7 +215,7 @@ class TrainingModule(pl.LightningModule):
         # will also be NaN. In this case we return None so lightning skips this train step
         if torch.isnan(train_loss).item():
             print("\n\nTraining loss is nan\n\n")
-            return None
+            return F.l1_loss(y_hat, y_hat)
         else:
             return train_loss
     
