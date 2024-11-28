@@ -62,12 +62,12 @@ def check_nan_and_finite(X: torch.Tensor, y: torch.Tensor, y_hat: torch.Tensor) 
 
 
 def upload_video(
-        y: torch.Tensor, 
-        y_hat: torch.Tensor, 
-        video_name: str, 
-        channel_nums: list[int] = [8, 1], 
-        fps: int=4
-    ) -> None:
+    y: torch.Tensor, 
+    y_hat: torch.Tensor, 
+    video_name: str, 
+    channel_nums: list[int] = [8, 1], 
+    fps: int=4
+) -> None:
     """Upload prediction video to wandb
     
     Args:
@@ -251,9 +251,8 @@ class TrainingModule(pl.LightningModule):
         val_dataset = self.trainer.val_dataloaders.dataset
         
         if self.video_plot_t0_times is not None:
-            dates = [val_dataset.t0_times[i] for i in [0,1,2]]
+            dates = pd.to_datetime(list(self.video_plot_t0_times))
 
-            
             X, y = default_collate([val_dataset[date]for date in dates])
             X = X.to(self.device)
             y = y.to(self.device)
