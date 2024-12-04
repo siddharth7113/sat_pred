@@ -19,16 +19,33 @@ from lightning.pytorch.loggers import Logger
 from lightning.pytorch.loggers.wandb import WandbLogger
 from omegaconf import DictConfig, OmegaConf
 
-
 import rich.syntax
 import rich.tree
 from lightning.pytorch.utilities import rank_zero_only
 
 from sat_pred.load_model_from_checkpoint import get_model_from_checkpoints
+from sat_pred.loss import LossFunction
 
 # TODO: is this line needed?
 torch.set_default_dtype(torch.float32)
 
+def resolve_loss_name(loss):
+    """Return the desired metric to monitor based on the loss being used.
+
+    The adds the option to use something like:
+        monitor: "${resolve_loss_name:${model.output_quantiles}}"
+    """
+    loss = hydra.utils.instantiate(loss, _convert_='all')
+    
+    if isinstance(loss, str):
+        return loss
+    elif isinstance(loss, LossFunction):
+        return loss.name
+    else:
+        print(loss)
+        raise ValueError(f"Unknown loss type: {type(loss)}")
+
+OmegaConf.register_new_resolver("resolve_loss_name", resolve_loss_name)
 
 @rank_zero_only
 def print_config(

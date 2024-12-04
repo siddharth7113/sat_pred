@@ -11,7 +11,7 @@ import wandb
 
 from sat_pred.ssim import SSIM3D
 from sat_pred.optimizers import AdamWReduceLROnPlateau
-
+from sat_pred.loss import LossFunction
 
     
 class MetricAccumulator:
@@ -114,7 +114,7 @@ class TrainingModule(pl.LightningModule):
         """
         super().__init__()
         
-        assert target_loss in ["MAE", "MSE", "SSIM"]
+        assert target_loss in ["MAE", "MSE", "SSIM"] or isinstance(target_loss, LossFunction)
 
         self.model = model
         self._optimizer = optimizer
@@ -156,6 +156,9 @@ class TrainingModule(pl.LightningModule):
                 "MAE": mae_loss,
                 "SSIM": ssim_loss,
         }
+
+        if isinstance(self.target_loss, LossFunction):
+            losses[self.target_loss.name] = self.target_loss(y_hat, y)
 
         return losses
 
@@ -210,8 +213,11 @@ class TrainingModule(pl.LightningModule):
         losses = {f"{k}/train": v for k, v in losses.items()}
 
         self._training_accumulate_log({k: v.detach().cpu().item() for k, v in losses.items()})
-        
-        train_loss = losses[f"{self.target_loss}/train"]
+
+        if isinstance(self.target_loss, LossFunction):
+            train_loss = losses[f"{self.target_loss.name}/train"]
+        else:
+            train_loss = losses[f"{self.target_loss}/train"]
                 
         # Occasionally y will be entirely NaN and we have no training targets. So the train loss
         # will also be NaN.
