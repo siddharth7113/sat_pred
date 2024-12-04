@@ -1,5 +1,5 @@
 import torch
-
+from sat_pred.loss import LossFunction
 
 class AdamW:
     """AdamW optimizer"""
@@ -33,6 +33,14 @@ class AdamWReduceLROnPlateau:
         opt = torch.optim.AdamW(
             model.parameters(), lr=self.lr, **self.opt_kwargs
         )
+
+        if isinstance(model.target_loss, str):
+            monitor = f"{model.target_loss}/val"
+        elif isinstance(model.target_loss, LossFunction):
+            monitor = f"{model.target_loss.name}/val"
+        else:
+            raise ValueError(f"Unknown loss type: {type(model)}")
+
         sch = {
             "scheduler": torch.optim.lr_scheduler.ReduceLROnPlateau(
                 opt,
@@ -40,7 +48,7 @@ class AdamWReduceLROnPlateau:
                 patience=self.patience,
                 threshold=self.threshold,
             ),
-            "monitor": f"{model.target_loss}/val",
+            "monitor": monitor,
         }
 
         return [opt], [sch]
