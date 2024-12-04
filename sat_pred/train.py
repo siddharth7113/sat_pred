@@ -35,15 +35,15 @@ def resolve_loss_name(loss):
     The adds the option to use something like:
         monitor: "${resolve_loss_name:${model.output_quantiles}}"
     """
-    loss = hydra.utils.instantiate(loss, _convert_='all')
     
     if isinstance(loss, str):
         return loss
-    elif isinstance(loss, LossFunction):
-        return loss.name
     else:
-        print(loss)
-        raise ValueError(f"Unknown loss type: {type(loss)}")
+        loss = hydra.utils.instantiate(loss, _convert_='all')
+        if isinstance(loss, LossFunction):
+            return loss.name
+        else:
+            raise ValueError(f"Unknown loss type: {type(loss)}")
 
 OmegaConf.register_new_resolver("resolve_loss_name", resolve_loss_name)
 
