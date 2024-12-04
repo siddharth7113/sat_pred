@@ -103,6 +103,7 @@ class TrainingModule(pl.LightningModule):
         optimizer = AdamWReduceLROnPlateau(),
         video_plot_t0_times: list[str] = None,
         video_crop_plots=None,
+        multi_gpu: bool = False,
     ):
         """Lightning module to wrap model, optimizer, and training routine
 
@@ -125,6 +126,7 @@ class TrainingModule(pl.LightningModule):
 
         self.video_plot_t0_times = video_plot_t0_times
         self.video_crop_plots = video_crop_plots
+        self.multi_gpu = multi_gpu
     
     @staticmethod
     def _minus_one_to_nan(y: torch.Tensor) -> None:
@@ -212,10 +214,15 @@ class TrainingModule(pl.LightningModule):
         train_loss = losses[f"{self.target_loss}/train"]
                 
         # Occasionally y will be entirely NaN and we have no training targets. So the train loss
-        # will also be NaN. In this case we return None so lightning skips this train step
+        # will also be NaN.
         if torch.isnan(train_loss).item():
             print("\n\nTraining loss is nan\n\n")
-            return F.l1_loss(y_hat, y_hat)
+            if self.multi_gpu:
+                # For multi-GPU we need to return some kind of loss
+                return F.l1_loss(y_hat*0, y_hat*0)
+            else:
+                # For single GPU we return None so lightning skips this train step
+                return None
         else:
             return train_loss
     

@@ -107,6 +107,8 @@ def train(config: DictConfig):
         # Instantiate the model
         model: LightningModule = hydra.utils.instantiate(config.model)
 
+    model.multi_gpu = len(config.trainer.devices) > 1
+
     # Instantiate the loggers
     loggers: list[Logger] = []
     if "logger" in config:
