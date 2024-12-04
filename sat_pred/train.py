@@ -1,6 +1,5 @@
 """Train the model using parameters in the supplied config files."""
 
-
 if __name__ == "__main__":
     import torch.multiprocessing as mp
     mp.set_start_method("spawn", force=True)
@@ -24,6 +23,8 @@ from omegaconf import DictConfig, OmegaConf
 import rich.syntax
 import rich.tree
 from lightning.pytorch.utilities import rank_zero_only
+
+from sat_pred.load_model_from_checkpoint import get_model_from_checkpoints
 
 # TODO: is this line needed?
 torch.set_default_dtype(torch.float32)
@@ -78,10 +79,33 @@ def train(config: DictConfig):
     """
 
     print_config(config)
-    
+
     # Set seed for random number generators in pytorch, numpy and python.random
     if "seed" in config:
         seed_everything(config.seed, workers=True)
+    
+
+    if config.model.model.get("from_pretrained", False):
+
+        # Load the model from the checkpoint
+        torch_model, model_config, data_config = get_model_from_checkpoints(
+            config.model.model.checkpoint_dir, 
+            val_best=config.model.model.val_best
+        )
+
+        # Overwtie the model config with the loaded model config
+        config.model.model = OmegaConf.create(model_config).model
+
+        # Create a new lightning wrapped model
+        model: LightningModule = hydra.utils.instantiate(config.model)
+
+        # Replace the untrained model with the loaded model
+        model.model = torch_model
+
+
+    else:
+        # Instantiate the model
+        model: LightningModule = hydra.utils.instantiate(config.model)
 
     # Instantiate the loggers
     loggers: list[Logger] = []
@@ -133,9 +157,6 @@ def train(config: DictConfig):
     datamodule: LightningDataModule = hydra.utils.instantiate(config.datamodule, _convert_='all')
     
     datamodule.zarr_path = list(datamodule.zarr_path)
-
-    # Instantiate the model
-    model: LightningModule = hydra.utils.instantiate(config.model)
 
     # Instantiate the trainer
     trainer: Trainer = hydra.utils.instantiate(
