@@ -32,6 +32,9 @@ class MultiscaleMAE(LossFunction):
     def __call__(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """Return loss"""
 
+        target = target.copy()
+        target[target==-1] = float('nan')
+
         loss = 0
 
         for scale in self.scales:
